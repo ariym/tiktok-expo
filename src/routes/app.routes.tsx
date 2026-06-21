@@ -65,7 +65,7 @@ const AppRoutes: React.FC = () => {
         options={{
           tabBarLabel: 'Discover',
           tabBarIcon: ({ color }) => (
-            <AntDesign name="search1" size={24} color={color} />
+            <AntDesign name="search" size={24} color={color} />
           ),
         }}
       />
@@ -116,7 +116,7 @@ const AppRoutes: React.FC = () => {
 
 const RootStackScreen: React.FC = () => {
   return (
-    <Stack.Navigator mode="modal">
+    <Stack.Navigator screenOptions={{ presentation: 'modal' }}>
       <Stack.Screen
         name="Main"
         component={AppRoutes}

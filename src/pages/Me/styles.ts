@@ -3,10 +3,9 @@ import { getStatusBarHeight } from 'react-native-status-bar-height';
 import { Feather } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 
-export const Container = styled.View.attrs({
-  paddingTop: getStatusBarHeight(),
-})`
+export const Container = styled.View`
   flex: 1;
+  padding-top: ${getStatusBarHeight()}px;
   background: #fff;
 `;
 
@@ -79,7 +78,7 @@ export const ProfileText = styled.Text`
 `;
 
 export const ProfileEdit = styled.TouchableOpacity.attrs({
-  activityOpacity: 1,
+  activeOpacity: 1,
 })`
   border-width: 1.5px;
   padding: 10px 30px;

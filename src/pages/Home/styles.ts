@@ -1,7 +1,7 @@
 import styled from 'styled-components/native';
 
 interface Props {
-  active: boolean;
+  $active: boolean;
 }
 
 export const Container = styled.View`
@@ -24,12 +24,12 @@ export const Header = styled.View`
   align-items: center;
   margin-top: 5%;
 `;
-export const Text = styled.Text`
+export const Text = styled.Text<Props>`
   color: #fff;
-  font-size: ${(props: Props) => (props.active ? '20px' : '18px')};
+  font-size: ${props => (props.$active ? '20px' : '18px')};
   padding: 5px;
   font-weight: bold;
-  opacity: ${(props: Props) => (props.active ? '1' : '0.5')};
+  opacity: ${props => (props.$active ? '1' : '0.5')};
 `;
 
 export const Tab = styled.TouchableOpacity.attrs({

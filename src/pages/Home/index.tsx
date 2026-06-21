@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
-import ViewPager from '@react-native-community/viewpager';
+import ViewPager from 'react-native-pager-view';
 
 import server from '../../../server.json';
 import Feed from './Feed';
@@ -15,11 +15,11 @@ const Home: React.FC = () => {
     <Container>
       <Header>
         <Tab onPress={() => setTab(1)}>
-          <Text active={tab === 1}>Following</Text>
+          <Text $active={tab === 1}>Following</Text>
         </Tab>
         <Separator>|</Separator>
         <Tab onPress={() => setTab(2)}>
-          <Text active={tab === 2}>For You</Text>
+          <Text $active={tab === 2}>For You</Text>
         </Tab>
       </Header>
       <ViewPager

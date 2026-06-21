@@ -7,7 +7,7 @@ import {
   AntDesign,
 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Camera } from 'expo-camera';
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 
 import {
   Container,
@@ -19,28 +19,27 @@ import {
 } from './styles';
 
 const Record: React.FC = () => {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [type, setType] = useState(Camera.Constants.Type.back);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [type, setType] = useState<CameraType>('back');
 
   const navigation = useNavigation();
   useEffect(() => {
-    async function permission(): Promise<void> {
-      const { status } = await Camera.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
+    async function requestCameraAccess(): Promise<void> {
+      await requestPermission();
       StatusBar.setHidden(true);
     }
-    permission();
-  }, []);
+    requestCameraAccess();
+  }, [requestPermission]);
 
-  if (hasPermission === null) {
+  if (!permission) {
     return <View />;
   }
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return <Text>No access to camera</Text>;
   }
 
   return (
-    <Camera style={{ flex: 1 }} type={type}>
+    <CameraView style={{ flex: 1 }} facing={type}>
       <Container>
         <Header>
           <Button
@@ -60,9 +59,9 @@ const Record: React.FC = () => {
           <Button
             onPress={() => {
               setType(
-                type === Camera.Constants.Type.back
-                  ? Camera.Constants.Type.front
-                  : Camera.Constants.Type.back,
+                type === 'back'
+                  ? 'front'
+                  : 'back',
               );
             }}
           >
@@ -75,7 +74,7 @@ const Record: React.FC = () => {
         </Header>
         <RecordButton />
       </Container>
-    </Camera>
+    </CameraView>
   );
 };
 

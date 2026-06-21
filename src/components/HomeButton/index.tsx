@@ -10,7 +10,7 @@ interface Props {
 
 const HomeButton: React.FC<Props> = ({ home }) => {
   return (
-    <Container home={home}>
+    <Container $home={home}>
       <Button>
         <FontAwesome5 name="plus" size={18} color={home ? '#000' : '#fff'} />
       </Button>

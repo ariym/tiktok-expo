@@ -29,7 +29,7 @@ const Me: React.FC = () => {
       <Header>
         <AntDesign
           style={{ position: 'absolute', left: 10, top: 10 }}
-          name="adduser"
+          name="user-add"
           size={24}
           color="black"
         />

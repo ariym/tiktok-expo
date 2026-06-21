@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Image, Animated, Easing } from 'react-native';
 
 import { FontAwesome, AntDesign } from '@expo/vector-icons';
-import { Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import Lottie from 'lottie-react-native';
 
 import musicFly from '../../../assets/lottie-animations/music-fly.json';
@@ -36,16 +36,35 @@ interface Props {
 }
 
 const Feed: React.FC<Props> = ({ play, item }) => {
-  const spinValue = new Animated.Value(0);
+  const player = useVideoPlayer({ uri: item.uri }, videoPlayer => {
+    videoPlayer.loop = true;
+    videoPlayer.volume = 1;
+  });
+  const spinValue = useRef(new Animated.Value(0)).current;
 
-  Animated.loop(
-    Animated.timing(spinValue, {
-      toValue: 1,
-      duration: 10000,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }),
-  ).start();
+  useEffect(() => {
+    if (play) {
+      player.play();
+      return;
+    }
+
+    player.pause();
+  }, [play, player]);
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 10000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+
+    animation.start();
+
+    return () => animation.stop();
+  }, [spinValue]);
 
   const rotateProp = spinValue.interpolate({
     inputRange: [0, 1],
@@ -65,14 +84,10 @@ const Feed: React.FC<Props> = ({ play, item }) => {
         }}
       />
       <Container>
-        <Video
-          source={{ uri: item.uri }}
-          rate={1.0}
-          volume={1.0}
-          isMuted={false}
-          resizeMode="cover"
-          shouldPlay={play}
-          isLooping
+        <VideoView
+          player={player}
+          contentFit="cover"
+          nativeControls={false}
           style={{
             width: '100%',
             height: '100%',
@@ -142,7 +157,8 @@ const Feed: React.FC<Props> = ({ play, item }) => {
 
           <Lottie
             source={musicFly}
-            progress={play ? spinValue : 0}
+            autoPlay={play}
+            progress={play ? undefined : 0}
             style={{ width: 150, position: 'absolute', bottom: 0, right: 0 }}
           />
         </BoxAction>

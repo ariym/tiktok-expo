@@ -6,7 +6,7 @@ import AppRoutes from './routes/app.routes';
 
 const Routes: React.FC = () => {
   return (
-    <NavigationContainer>
+    <NavigationContainer documentTitle={{ enabled: false }}>
       <AppRoutes />
     </NavigationContainer>
   );

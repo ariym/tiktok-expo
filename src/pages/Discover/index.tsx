@@ -14,7 +14,7 @@ const Discover: React.FC = () => {
             style={{
               paddingRight: 10,
             }}
-            name="search1"
+            name="search"
             size={18}
             color="#838383"
           />
@@ -25,7 +25,7 @@ const Discover: React.FC = () => {
             onChangeText={text => setSearch(text)}
           />
         </Search>
-        <Ionicons name="md-qr-scanner" size={25} color="black" />
+        <Ionicons name="qr-code-outline" size={25} color="black" />
       </Header>
     </Container>
   );
