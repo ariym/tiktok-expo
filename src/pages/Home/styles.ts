@@ -36,6 +36,30 @@ export const Tab = styled.TouchableOpacity.attrs({
   activeOpacity: 1,
 })``;
 
+export const RefreshButton = styled.TouchableOpacity.attrs({
+  activeOpacity: 0.8,
+})`
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-left: 12px;
+`;
+
+export const CenterMessage = styled.View`
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+`;
+
+export const MessageText = styled.Text`
+  color: #fff;
+  font-size: 16px;
+  margin-top: 12px;
+  text-align: center;
+`;
+
 export const Feed = styled.View`
   flex: 1;
   z-index: -1;

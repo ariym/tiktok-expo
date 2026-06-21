@@ -21,7 +21,7 @@ import {
 } from './styles';
 
 interface Item {
-  id: number;
+  id: string | number;
   username: string;
   tags: string;
   music: string;
