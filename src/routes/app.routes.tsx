@@ -46,31 +46,31 @@ const AppRoutes: React.FC = () => {
       activeColor={home ? '#fff' : '#000'}
     >
       <Tab.Screen
-        name="Home"
+        name="Play"
         component={Home}
         listeners={{
           focus: () => setHome(true),
           blur: () => setHome(false),
         }}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: 'Play',
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="home" size={24} color={color} />
+            <FontAwesome name="play-circle" size={24} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="Discover"
+        name="QPL"
         component={Discover}
         options={{
-          tabBarLabel: 'Discover',
+          tabBarLabel: 'QPL',
           tabBarIcon: ({ color }) => (
-            <AntDesign name="search" size={24} color={color} />
+            <AntDesign name="edit" size={24} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="Live"
+        name="Chat"
         component={Record}
         listeners={({ navigation }) => ({
           tabPress: e => {
@@ -78,7 +78,7 @@ const AppRoutes: React.FC = () => {
             e.preventDefault();
 
             // Do something with the `navigation` object
-            navigation.navigate('Record');
+            navigation.navigate('Chat');
           },
         })}
         options={{
@@ -87,13 +87,13 @@ const AppRoutes: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Inbox"
+        name="DB"
         component={Inbox}
         options={{
-          tabBarLabel: 'Inbox',
+          tabBarLabel: 'DB',
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons
-              name="message-text-outline"
+              name="database-outline"
               size={24}
               color={color}
             />
@@ -101,12 +101,12 @@ const AppRoutes: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Me"
+        name="Detect"
         component={Me}
         options={{
-          tabBarLabel: 'Me',
+          tabBarLabel: 'Detect',
           tabBarIcon: ({ color }) => (
-            <AntDesign name="user" size={24} color={color} />
+            <AntDesign name="thunderbolt" size={24} color={color} />
           ),
         }}
       />

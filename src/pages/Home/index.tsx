@@ -45,6 +45,7 @@ const Home: React.FC = () => {
       ).replace(/\/$/, ''),
     [],
   );
+  const feedRoute = tab === 2 ? '/api/clips' : '/api/feed';
 
   const loadFeed = useCallback(
     async (refresh = false) => {
@@ -55,7 +56,7 @@ const Home: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`${videoServerUrl}/api/feed?ts=${Date.now()}`);
+        const response = await fetch(`${videoServerUrl}${feedRoute}?ts=${Date.now()}`);
 
         if (!response.ok) {
           throw new Error(`Video server returned ${response.status}`);
@@ -78,7 +79,7 @@ const Home: React.FC = () => {
         setRefreshing(false);
       }
     },
-    [videoServerUrl],
+    [feedRoute, videoServerUrl],
   );
 
   useEffect(() => {
@@ -101,11 +102,11 @@ const Home: React.FC = () => {
       <Container>
         <Header>
           <Tab onPress={() => setTab(1)}>
-            <Text $active={tab === 1}>Following</Text>
+            <Text $active={tab === 1}>Full Video</Text>
           </Tab>
           <Separator>|</Separator>
           <Tab onPress={() => setTab(2)}>
-            <Text $active={tab === 2}>For You</Text>
+            <Text $active={tab === 2}>Clips</Text>
           </Tab>
           <RefreshButton onPress={() => loadFeed(true)} disabled={refreshing}>
             <AntDesign name="reload" size={22} color="#fff" />
@@ -122,11 +123,11 @@ const Home: React.FC = () => {
     <Container>
       <Header>
         <Tab onPress={() => setTab(1)}>
-          <Text $active={tab === 1}>Following</Text>
+          <Text $active={tab === 1}>Full Video</Text>
         </Tab>
         <Separator>|</Separator>
         <Tab onPress={() => setTab(2)}>
-          <Text $active={tab === 2}>For You</Text>
+          <Text $active={tab === 2}>Clips</Text>
         </Tab>
         <RefreshButton onPress={() => loadFeed(true)} disabled={refreshing}>
           {refreshing ? (

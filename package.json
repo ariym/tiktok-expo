@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "video-server": "node server/index.js"
+    "video-server": "node server/index.js",
+    "full": "sh -c 'trap \"kill 0\" EXIT; npm run video-server & npm run start'"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

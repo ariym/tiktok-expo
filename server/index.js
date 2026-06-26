@@ -2,10 +2,14 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const { URL } = require('url');
+const { execFile } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const ENV_PATH = path.join(ROOT, '.env');
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.m4v', '.webm']);
+const GENERATED_DIR_NAME = '_generated';
+const MIN_CLIP_SECONDS = 3;
+const MAX_CLIP_SECONDS = 12;
 
 function readEnvFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -86,6 +90,9 @@ function listVideoFiles() {
       const entryPath = path.join(directoryPath, entry.name);
 
       if (entry.isDirectory()) {
+        if (entry.name === GENERATED_DIR_NAME) {
+          return;
+        }
         walkDirectory(entryPath);
         return;
       }
@@ -131,6 +138,204 @@ function buildFeed(request) {
       likes: Math.floor(1000 + Math.random() * 9000),
       comments: Math.floor(100 + Math.random() * 2500),
       uri: `${publicBaseUrl}/videos/${id}`,
+      order: index,
+    };
+  });
+}
+
+function runCommand(command, args) {
+  return new Promise((resolve, reject) => {
+    execFile(command, args, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        error.message = `${command} failed: ${stderr || error.message}`;
+        reject(error);
+        return;
+      }
+
+      resolve({ stdout, stderr });
+    });
+  });
+}
+
+function roundToTenths(value) {
+  return Math.round(value * 10) / 10;
+}
+
+function randomBetween(min, max) {
+  if (max <= min) {
+    return min;
+  }
+
+  return min + Math.random() * (max - min);
+}
+
+function toEvenInt(value) {
+  return Math.max(0, Math.floor(value / 2) * 2);
+}
+
+function formatTimestampForName() {
+  return new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '');
+}
+
+function sanitizePathForName(fileName) {
+  return fileName.replace(/[\/\\]/g, '_').replace(/[^a-zA-Z0-9._-]/g, '-');
+}
+
+function ensureGeneratedDirectory() {
+  if (!VIDEO_DIR) {
+    throw new Error('VIDEO_DIR is required in .env');
+  }
+
+  const generatedDir = path.join(VIDEO_DIR, GENERATED_DIR_NAME);
+  fs.mkdirSync(generatedDir, { recursive: true });
+  return generatedDir;
+}
+
+async function probeVideo(filePath) {
+  const args = [
+    '-v',
+    'error',
+    '-show_streams',
+    '-show_format',
+    '-print_format',
+    'json',
+    filePath,
+  ];
+  const { stdout } = await runCommand('ffprobe', args);
+  const probe = JSON.parse(stdout);
+  const videoStream = (probe.streams || []).find(stream => stream.codec_type === 'video');
+
+  if (!videoStream) {
+    throw new Error(`No video stream found for ${filePath}`);
+  }
+
+  const streamDuration = Number.parseFloat(videoStream.duration || '');
+  const formatDuration = Number.parseFloat(probe.format?.duration || '');
+
+  return {
+    width: Number(videoStream.width || 0),
+    height: Number(videoStream.height || 0),
+    codecName: videoStream.codec_name || '',
+    duration: Number.isFinite(streamDuration)
+      ? streamDuration
+      : Number.isFinite(formatDuration)
+        ? formatDuration
+        : 0,
+  };
+}
+
+async function createRandomClip(inputPath, outputPath, clipStartSeconds, clipDurationSeconds) {
+  const args = [
+    '-v',
+    'error',
+    '-y',
+    '-ss',
+    String(roundToTenths(clipStartSeconds)),
+    '-i',
+    inputPath,
+    '-t',
+    String(roundToTenths(clipDurationSeconds)),
+    '-c',
+    'copy',
+    '-movflags',
+    '+faststart',
+    outputPath,
+  ];
+
+  await runCommand('ffmpeg', args);
+}
+
+async function cropToPortraitWithCopy(inputPath, outputPath, width, height, codecName) {
+  if (width <= height) {
+    return inputPath;
+  }
+
+  if (codecName !== 'h264') {
+    throw new Error(
+      `Cannot crop non-portrait video without re-encoding for codec "${codecName}".`,
+    );
+  }
+
+  const targetWidth = toEvenInt(Math.min(width, Math.floor(height * (9 / 16))));
+  const cropDelta = Math.max(width - targetWidth, 0);
+  const cropLeft = toEvenInt(Math.floor(cropDelta / 2));
+  const cropRight = toEvenInt(cropDelta - cropLeft);
+  const cropArgs = [
+    '-v',
+    'error',
+    '-y',
+    '-i',
+    inputPath,
+    '-map',
+    '0',
+    '-c',
+    'copy',
+    '-bsf:v',
+    `h264_metadata=crop_left=${cropLeft}:crop_right=${cropRight}:crop_top=0:crop_bottom=0`,
+    outputPath,
+  ];
+
+  await runCommand('ffmpeg', cropArgs);
+  return outputPath;
+}
+
+async function createClipAsset(fileName) {
+  const sourcePath = path.resolve(VIDEO_DIR, fileName);
+  const generatedDir = ensureGeneratedDirectory();
+  const extension = path.extname(fileName).toLowerCase() || '.mp4';
+  const stamp = formatTimestampForName();
+  const sourceName = sanitizePathForName(path.basename(fileName, extension));
+  const randomToken = Math.random().toString(36).slice(2, 8);
+  const clipBaseName = `${sourceName}-${stamp}-${randomToken}`;
+  const randomClipFileName = `${clipBaseName}-clip${extension}`;
+  const randomClipPath = path.join(generatedDir, randomClipFileName);
+
+  const sourceMetadata = await probeVideo(sourcePath);
+  const maxClipDuration = Math.min(MAX_CLIP_SECONDS, sourceMetadata.duration || MAX_CLIP_SECONDS);
+  const minClipDuration = Math.min(MIN_CLIP_SECONDS, maxClipDuration);
+  const clipDuration = randomBetween(minClipDuration, maxClipDuration);
+  const maxStartTime = Math.max((sourceMetadata.duration || clipDuration) - clipDuration, 0);
+  const clipStart = randomBetween(0, maxStartTime);
+
+  await createRandomClip(sourcePath, randomClipPath, clipStart, clipDuration);
+
+  const clipMetadata = await probeVideo(randomClipPath);
+
+  if (clipMetadata.width <= clipMetadata.height) {
+    return path.posix.join(GENERATED_DIR_NAME, randomClipFileName);
+  }
+
+  const portraitFileName = `${clipBaseName}-portrait${extension}`;
+  const portraitPath = path.join(generatedDir, portraitFileName);
+  await cropToPortraitWithCopy(
+    randomClipPath,
+    portraitPath,
+    clipMetadata.width,
+    clipMetadata.height,
+    clipMetadata.codecName,
+  );
+  return path.posix.join(GENERATED_DIR_NAME, portraitFileName);
+}
+
+async function buildClipFeed(request) {
+  const publicBaseUrl =
+    env.VIDEO_PUBLIC_BASE_URL ||
+    `http://${request.headers.host || `localhost:${PORT}`}`;
+  const videoFiles = shuffle(listVideoFiles());
+  const clipFiles = await Promise.all(videoFiles.map(fileName => createClipAsset(fileName)));
+
+  return clipFiles.map((clipFileName, index) => {
+    const id = encodeURIComponent(`${clipFileName}-${Date.now()}-${index}`);
+    const title = path.basename(clipFileName, path.extname(clipFileName));
+
+    return {
+      id,
+      username: '@local',
+      tags: '#local #clip',
+      music: title,
+      likes: Math.floor(500 + Math.random() * 6000),
+      comments: Math.floor(25 + Math.random() * 1500),
+      uri: `${publicBaseUrl}/videos/${encodeURIComponent(clipFileName)}`,
       order: index,
     };
   });
@@ -243,6 +448,17 @@ const server = http.createServer((request, response) => {
     } catch (error) {
       sendJson(response, 500, { error: error.message });
     }
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/clips') {
+    buildClipFeed(request)
+      .then(feed => {
+        sendJson(response, 200, { feed });
+      })
+      .catch(error => {
+        sendJson(response, 500, { error: error.message });
+      });
     return;
   }
 
